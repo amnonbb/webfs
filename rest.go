@@ -27,7 +27,7 @@ func (a *App) getFilesList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, f := range files {
-		if f.Size() > 1024*1024*1024 {
+		if f.Size() > 1024*1024 {
 			list = append(list, f.Name())
 		}
 	}
