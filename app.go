@@ -38,7 +38,7 @@ func (a *App) Run(port string) {
 
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/{ep}/list", a.getFilesList).Methods("GET")
-	a.Router.PathPrefix("/data/video/").Handler(http.StripPrefix("/data/video/", http.FileServer(http.Dir("/data/video/"))))
+	a.Router.PathPrefix(FilesPath).Handler(http.StripPrefix(FilesPath, http.FileServer(http.Dir(FilesPath))))
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {

@@ -9,10 +9,10 @@ import (
 )
 
 type info struct {
-	IP string                 `json:"ip"`
-	Country string 			  `json:"country"`
-	Code string 			  `json:"code"`
-	City string 			  `json:"city"`
+	IP      string `json:"ip"`
+	Country string `json:"country"`
+	Code    string `json:"code"`
+	City    string `json:"city"`
 }
 
 func (a *App) getFilesList(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +27,9 @@ func (a *App) getFilesList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, f := range files {
-		list = append(list, f.Name())
+		if f.Size() > 1024*1024*1024 {
+			list = append(list, f.Name())
+		}
 	}
 
 	respondWithJSON(w, http.StatusOK, list)
