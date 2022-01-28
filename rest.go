@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -15,11 +17,51 @@ type info struct {
 	City    string `json:"city"`
 }
 
+type File struct {
+	ModTime  string  `json:"mod-time"`
+	IsDir    bool    `json:"is-dir"`
+	Size     int64   `json:"size"`
+	Name     string  `json:"name"`
+	Path     string  `json:"path"`
+	Children []*File `json:"children"`
+}
+
+func toFile(file os.FileInfo, path string) *File {
+	JSONFile := File{
+		ModTime: file.ModTime().Format("2006-01-02 15:04:05"),
+		IsDir:   file.IsDir(),
+		Size:    file.Size(),
+		Name:    file.Name(),
+		Path:    path,
+	}
+	return &JSONFile
+}
+
+func (a *App) getFilesTree(w http.ResponseWriter, r *http.Request) {
+
+	rootOSFile, _ := os.Stat(os.Getenv("TREE_PATH"))
+	rootFile := toFile(rootOSFile, os.Getenv("TREE_PATH"))
+	stack := []*File{rootFile}
+
+	for len(stack) > 0 {
+		file := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		children, _ := ioutil.ReadDir(file.Path)
+		for _, ch := range children {
+			child := toFile(ch, filepath.Join(file.Path, ch.Name()))
+			file.Children = append(file.Children, child)
+			stack = append(stack, child)
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, rootFile)
+}
+
 func (a *App) getFilesList(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	ep := vars["ep"]
-	var list []string
+	var list []*File
 
 	files, err := ioutil.ReadDir(FilesPath + ep)
 	if err != nil {
@@ -28,7 +70,8 @@ func (a *App) getFilesList(w http.ResponseWriter, r *http.Request) {
 
 	for _, f := range files {
 		if f.Size() > 1024*1024 {
-			list = append(list, f.Name())
+			child := toFile(f, filepath.Join(FilesPath+ep, f.Name()))
+			list = append(list, child)
 		}
 	}
 
