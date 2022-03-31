@@ -39,6 +39,7 @@ func (a *App) Run(port string) {
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/{ep}/list", a.getFilesList).Methods("GET")
 	a.Router.HandleFunc("/{ep}/tree", a.getFilesTree).Methods("GET")
+	a.Router.HandleFunc("/exec/{ep}", a.putJson).Methods("PUT")
 	a.Router.PathPrefix(FilesPath).Handler(http.StripPrefix(FilesPath, http.FileServer(http.Dir(FilesPath))))
 }
 

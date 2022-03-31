@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -24,6 +26,12 @@ type File struct {
 	Name     string  `json:"name"`
 	Path     string  `json:"path"`
 	Children []*File `json:"children"`
+}
+
+type Status struct {
+	Status string                 `json:"status"`
+	Out    string                 `json:"stdout"`
+	Result map[string]interface{} `json:"jsonst"`
 }
 
 func toFile(file os.FileInfo, path string) *File {
@@ -76,6 +84,35 @@ func (a *App) getFilesList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, list)
+}
+
+func (a *App) putJson(w http.ResponseWriter, r *http.Request) {
+	var s Status
+	vars := mux.Vars(r)
+	endpoint := vars["ep"]
+
+	b, _ := ioutil.ReadAll(r.Body)
+
+	cmd := exec.Command("/opt/exec/"+endpoint+".sh", string(b))
+	cmd.Dir = "/opt/exec/"
+	out, err := cmd.CombinedOutput()
+
+	if err != nil {
+		s.Out = err.Error()
+	}
+
+	s.Out = string(out)
+	json.Unmarshal(out, &s.Result)
+
+	defer r.Body.Close()
+
+	if err != nil {
+		s.Status = "error"
+	} else {
+		s.Status = "ok"
+	}
+
+	respondWithJSON(w, http.StatusOK, s)
 }
 
 func (a *App) getClientInfo(w http.ResponseWriter, r *http.Request) {
